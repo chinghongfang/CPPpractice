@@ -3,7 +3,7 @@
 using namespace std;
 int main(){
     avl<int>* a_t = new avl<int>;
-    a_t->val = 10;
+    a_t->insert(10);
     a_t->insert(2);
     a_t->insert(20);
     a_t->insert(15);

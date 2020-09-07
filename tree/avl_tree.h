@@ -8,7 +8,7 @@ template<class T>
 class avl{
     public:
         avl(){
-            diff = 0;
+            diff = 5;
             left = nullptr;
             right = nullptr;
         }
@@ -39,6 +39,11 @@ class avl{
 template<class T>
 int avl<T>::insert(T val){
     int factor;
+    if (this->diff == 5) {
+        this->val = val;
+        this->diff = 0;
+        return 0;
+    }
     if (val < this->val && this->left){             // class T operator <
         factor = - ( this->left->insert(val) );
     }else if (val == this->val){ return 0;          // make all val unique in tree
@@ -50,6 +55,7 @@ int avl<T>::insert(T val){
             // add the new node to left
             this->left = new avl<T>;
             this->left->val = val;
+            this->left->diff = 0;
 
             // update the height factor -- "diff"
             factor = -1;
@@ -57,6 +63,7 @@ int avl<T>::insert(T val){
             // add the new node to right
             this->right = new avl<T>;
             this->right->val = val;             // class T operator =
+            this->right->diff = 0;
 
             // update the height factor
             factor = 1;
@@ -104,25 +111,22 @@ void avl<T>::balance(){
 //     t2 t3     t1  t2
 template<class T>
 void avl<T>::left_rot(){
-    avl<T>* t1 = this->left;
-    avl<T>* t2 = this->right->left;
-    avl<T>* t3 = this->right->right;
+    avl<T>* Z = this->right;
     // height compare to t1
     char t2_h = this->diff - 1 - ((this->right->diff)<0?0:this->right->diff);
     char t3_h = this->diff - 1 + ((this->right->diff)>0?0:this->right->diff);
 
-    this->left = this->right;
-    this->right = t3;
-
-    this->left->left = t1;
-    this->left->right = t2;
+    this->right = Z->right;
+    Z->right = Z->left;
+    Z->left = this->left;
+    this->left = Z;
 
     this->diff = t3_h - 1 - (t2_h>0?t2_h:0);
     this->left->diff = t2_h;
 
     T tmp = this->val;
-    this->val = this->left->val;
-    this->left->val = tmp;
+    this->val = Z->val;
+    Z->val = tmp;
 
     return;
 }
@@ -133,24 +137,21 @@ void avl<T>::left_rot(){
 //  t1  t2            t2  t3
 template<class T>
 void avl<T>::right_rot(){
-    avl<T>* t1 = this->left->left;
-    avl<T>* t2 = this->left->right;
-    avl<T>* t3 = this->right;
+    avl<T>* Z = this->left;
     // height compare to t3
     char t1_h = -(this->diff) - 1 - ((this->left->diff)<0?0:this->left->diff);
     char t2_h = -(this->diff) - 1 + ((this->left->diff)>0?0:this->left->diff);
-    this->right = this->left;
-    this->left = t1;
-
-    this->right->left = t2;
-    this->right->right = t3;
+    this->left = Z->left;
+    Z->left = Z->right;
+    Z->right = this->right;
+    this->right = Z;
 
     this->diff = -(t1_h - 1 - (t2_h>0?t2_h:0));
     this->right->diff = -t2_h;
 
     T tmp = this->val;
-    this->val = this->right->val;
-    this->right->val = tmp;
+    this->val = Z->val;
+    Z->val = tmp;
 
     return;
 }
