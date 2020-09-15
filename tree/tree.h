@@ -25,7 +25,7 @@ class node{
 node<int>* str_to_tree(char* str);
 node<int>* str_to_tree(std::string str);
 template<class T> void print_tree(T* root);
-
+template<class T, class V> bool search_tree(T* root, V val);
 // string to integer tree
 // example format: "[1, null, 2,3,4]"
 //        1
@@ -188,5 +188,19 @@ void print_tree(T* root){
     }
     std::cout<<'\n';
     return;
+}
+
+template<class T, class V>
+bool search_tree(T* root, V val){
+    while (root){
+        if (val < root->val){
+            root = root->left;
+        }else if (root->val < val){
+            root = root->right;
+        }else {
+            return true;
+        }
+    }
+    return false;
 }
 #endif
