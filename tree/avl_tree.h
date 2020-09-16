@@ -23,14 +23,13 @@ class avl{
         T val;
         avl<T>* left;
         avl<T>* right;
-    private:
-        void balance();
+    //private:
+        char balance();
         void left_rot();
         void right_rot();
         int del_this();
         char diff;
 };
-
 // assume the tree "this" is a avl tree already
 // class T needs "operator <"
 // class T needs "operator ="
@@ -47,7 +46,7 @@ int avl<T>::insert(T val){
     if (val < this->val && this->left){             // class T operator <
         factor = - ( this->left->insert(val) );
     }else if (val == this->val){ return 0;          // make all val unique in tree
-    }else if (!(val < this->val) && this->right){
+    }else if (this->val < val && this->right){
         factor = this->right->insert(val);
     }else {
         // here is leaf node. Determine which side to add new node
@@ -70,39 +69,40 @@ int avl<T>::insert(T val){
         }
     }
 
-    if (this->diff == 0){
-        this->diff += factor;
-        return 1;
-    }else {
-        this->diff += factor;
-        //  do balance when |this->diff| == 2)
-        if (this->diff == 2 || this->diff == -2){
-            this->balance();
+    if (factor == 0) return 0;
+    this->diff += factor;
+    char ret = 0;
+    if (factor < 0){
+        if (this->diff < 0) ret = 1;
+        if (this->diff == -2){
+            ret += this->balance();
         }
-        return 0;
+    }else {
+        if (this->diff > 0) ret = 1;
+        if (this->diff == 2){
+            ret += this->balance();
+        }
     }
+    return ret;
 }
 template<class T>
-void avl<T>::balance(){
+char avl<T>::balance(){
     // check
-    if (this->diff != 2 && this->diff != -2) return;
+    if (this->diff != 2 && this->diff != -2) return 0;
 
+    char ret = -1;
     if (this->diff > 0){        // diff == 2  (right heavy)
-        if (this->right->diff < 0){
+        if (this->right->diff == 0) ret = 0;        // only one situation not change tree height
+        if (this->right->diff < 0)
             this->right->right_rot();
-            this->left_rot();
-        }else {
-            this->left_rot();
-        }
+        this->left_rot();
     }else {                     // diff == -2 (left heavy)
-        if (this->left->diff > 0){
+        if (this->left->diff == 0) ret = 0;         // only one situation not change tree height
+        if (this->left->diff > 0)
             this->left->left_rot();
-            this->right_rot();
-        }else {
-            this->right_rot();
-        }
+        this->right_rot();
     }
-    return;
+    return ret;
 }
 //     X             Z
 //    / \           / \
@@ -155,13 +155,13 @@ void avl<T>::right_rot(){
 
     return;
 }
-// need "operator ==" in class T
+
 template<class T>
 int avl<T>::del(T val){
     int factor;
     if (val == this->val){
         factor = this->del_this();
-        if (factor == -2) return -2;    // this pointer is deleted, return to parent node and set null
+        // factor == -2 ==> this pointer is deleted, return to parent node and set null
         return factor;
 
     }else if (val < this->val && this->left) {
@@ -172,30 +172,22 @@ int avl<T>::del(T val){
 
 
     if (factor == 2){           // left is empty now
+        delete this->left;
         this->left = nullptr;
         this->diff += 1;
         // tree balance 
         if (this->diff == 2) {
-            if (this->right->diff == 0){    // one deletion situation will not change tree height
-                this->balance();
-                return 0;
-            }
-            this->balance();
-            return -1;
+            return (int)(this->balance());
         }
 
         if (this->diff <= 0) return -1;
     }else if (factor == -2){    // right is empty now
+        delete this->right;
         this->right = nullptr;
         this->diff -= 1;
         // tree balance
         if (this->diff == -2){
-            if (this->left->diff == 0){     // one deletion situation will not change tree height
-                this->balance();
-                return 0;
-            }
-            this->balance();
-            return -1;
+            return (int)(this->balance());
         }
 
         if (this->diff >= 0) return -1;
@@ -206,20 +198,8 @@ int avl<T>::del(T val){
             return -1;
         }else if (this->diff <= 0 && factor > 0){
             return -1;
-        }else if (this->diff == 2){         // tree balance
-            if (this->right->diff == 0){
-                this->balance();
-                return 0;
-            }
-            this->balance();
-            return -1;
-        }else if (this->diff == -2){        // tree balance
-            if (this->left->diff == 0){
-                this->balance();
-                return 0;
-            }
-            this->balance();
-            return -1;
+        }else if (this->diff == 2 || this->diff == -2){         // tree balance
+            return (int)(this->balance());
         }
     }
     return 0;
@@ -237,6 +217,7 @@ int avl<T>::del_this(){
             stk.push(mid);
             mid = mid->left;
         }
+        // left most get!
 
         this->val = mid->val;           // middle node goes to the deleted node
         if (!stk.empty()){
@@ -248,7 +229,13 @@ int avl<T>::del_this(){
             while (!stk.empty()){
                 if (tmp < 0){
                     tmp = stk.top()->diff;
-                    stk.top()->diff += 1;
+                    stk.top()->diff += 1;           // left subtree decrease
+                    if (stk.top()->diff == 2){
+                        // do balancing and check height
+                        if (stk.top()->balance()){  // if return -1, keep update parents' diff
+                            tmp = -1;
+                        }
+                    }
                 }else {
                     tmp = 0;
                     break;
@@ -258,6 +245,7 @@ int avl<T>::del_this(){
             if (tmp < 0){                   // causing height of right subtree decrease
                 this->diff -= 1;
                 if (this->diff >= 0) return -1; // this tree height decrease
+                if (this->diff == -2) return this->balance();
             }
         }else {                         // the head of right subtree is the left most node
             this->right = mid->right;
@@ -265,8 +253,10 @@ int avl<T>::del_this(){
             delete mid;
             this->diff -= 1;
             if (this->diff >= 0) return -1;     // this tree height decrease
+            if (this->diff == -2) return this->balance();
         }
-    }else if (this->left){
+
+    }else if (this->left){      // right subtree empty, left exists
         // there is no right subtree, so we just make the left subtree be the new tree
         mid = this->left;       // just a tmp value
         this->left = mid->left;
@@ -279,7 +269,6 @@ int avl<T>::del_this(){
         delete mid;
         return -1;
     }else {
-        delete this;
         return -2;
     }
     return 0;
