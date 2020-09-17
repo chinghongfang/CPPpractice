@@ -23,7 +23,7 @@ class avl{
         T val;
         avl<T>* left;
         avl<T>* right;
-    //private:
+    private:
         char balance();
         void left_rot();
         void right_rot();
